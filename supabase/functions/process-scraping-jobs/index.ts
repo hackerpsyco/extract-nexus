@@ -1,10 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import FirecrawlApp from 'https://esm.sh/@mendable/firecrawl-js@4.3.8'
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import FirecrawlApp from 'npm:@mendable/firecrawl-js@4.3.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 }
 
 interface ScrapingJob {
@@ -22,14 +23,12 @@ interface ScrapedResult {
   metadata?: Record<string, any>
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -41,7 +40,6 @@ serve(async (req) => {
       }
     )
 
-    // Initialize Firecrawl
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY')
     if (!firecrawlApiKey) {
       throw new Error('FIRECRAWL_API_KEY environment variable is required')
@@ -49,12 +47,11 @@ serve(async (req) => {
 
     const app = new FirecrawlApp({ apiKey: firecrawlApiKey })
 
-    // Get pending jobs
     const { data: jobs, error: jobsError } = await supabaseClient
       .from('scraping_jobs')
       .select('*')
       .eq('status', 'pending')
-      .limit(10) // Process up to 10 jobs at once
+      .limit(10)
 
     if (jobsError) {
       throw jobsError
@@ -72,7 +69,6 @@ serve(async (req) => {
 
     console.log(`Processing ${jobs.length} jobs`)
 
-    // Process jobs concurrently with limited concurrency
     const concurrencyLimit = 3
     const results = []
 
@@ -115,7 +111,6 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
   console.log(`Processing job ${job.id} for URL: ${job.url}`)
 
   try {
-    // Update job status to running
     await supabaseClient
       .from('scraping_jobs')
       .update({ 
@@ -124,7 +119,6 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
       })
       .eq('id', job.id)
 
-    // Determine if it's a single page or needs crawling
     const shouldCrawl = await shouldCrawlSite(job.url)
     
     let results: ScrapedResult[] = []
@@ -132,17 +126,16 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
     let scrapedPages = 0
 
     if (shouldCrawl) {
-      // Use crawl for multi-page sites
       console.log(`Crawling site: ${job.url}`)
       
       const crawlResponse = await app.crawlUrl(job.url, {
         crawlerOptions: {
-          includes: [], // Include all pages by default
-          excludes: ['**/privacy*', '**/terms*', '**/cookie*'], // Exclude common non-content pages
+          includes: [],
+          excludes: ['**/privacy*', '**/terms*', '**/cookie*'],
           generateImgAltText: true,
           returnOnlyUrls: false,
-          maxDepth: 2, // Limit depth for performance
-          limit: 50, // Limit total pages for performance
+          maxDepth: 2,
+          limit: 50,
         },
         pageOptions: {
           onlyMainContent: true,
@@ -167,7 +160,6 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
         scrapedPages = results.length
       }
     } else {
-      // Use single page scraping
       console.log(`Scraping single page: ${job.url}`)
       
       const scrapeResponse = await app.scrapeUrl(job.url, {
@@ -199,7 +191,6 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
       throw new Error('No data extracted from the URL')
     }
 
-    // Save scraped data to database
     const dataInserts = results.map(result => ({
       job_id: job.id,
       user_id: job.user_id,
@@ -218,7 +209,6 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
       throw insertError
     }
 
-    // Update job as completed
     await supabaseClient
       .from('scraping_jobs')
       .update({ 
@@ -236,7 +226,6 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
   } catch (error) {
     console.error(`Error processing job ${job.id}:`, error)
 
-    // Update job as failed
     await supabaseClient
       .from('scraping_jobs')
       .update({ 
@@ -252,11 +241,9 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
 
 async function shouldCrawlSite(url: string): Promise<boolean> {
   try {
-    // Simple heuristic: if it's a domain root or has common patterns, crawl it
     const urlObj = new URL(url)
     const path = urlObj.pathname
     
-    // Crawl if it's a root domain or common company pages
     if (path === '/' || path === '' || 
         path.includes('/about') || 
         path.includes('/company') || 
@@ -266,7 +253,6 @@ async function shouldCrawlSite(url: string): Promise<boolean> {
       return true
     }
     
-    // For specific pages, just scrape the single page
     return false
   } catch {
     return false
@@ -276,7 +262,6 @@ async function shouldCrawlSite(url: string): Promise<boolean> {
 function extractTitleFromContent(content: string): string {
   if (!content) return 'Untitled'
   
-  // Try to extract title from the beginning of content
   const lines = content.split('\n').filter(line => line.trim())
   if (lines.length > 0) {
     const firstLine = lines[0].trim()
@@ -291,7 +276,6 @@ function extractTitleFromContent(content: string): string {
 function extractDescriptionFromContent(content: string): string {
   if (!content) return ''
   
-  // Extract first few sentences as description
   const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
   if (sentences.length > 0) {
     let description = sentences[0].trim()

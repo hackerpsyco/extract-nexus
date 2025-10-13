@@ -5,6 +5,7 @@ import { Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { LogOut, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useJobProcessor } from "@/hooks/useJobProcessor";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { UrlInputForm } from "@/components/dashboard/UrlInputForm";
 import { JobsList } from "@/components/dashboard/JobsList";
@@ -16,6 +17,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useJobProcessor(session?.user?.id || '');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

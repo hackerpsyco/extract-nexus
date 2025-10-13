@@ -1,9 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 }
 
 interface ExportRequest {
@@ -13,8 +14,7 @@ interface ExportRequest {
   search_term?: string
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -26,7 +26,6 @@ serve(async (req) => {
       throw new Error('user_id is required')
     }
 
-    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -38,7 +37,6 @@ serve(async (req) => {
       }
     )
 
-    // Get scraped data
     let query = supabaseClient
       .from('scraped_data')
       .select('*')
@@ -55,7 +53,6 @@ serve(async (req) => {
       throw new Error('No data found to export')
     }
 
-    // Filter data if search term provided
     let filteredData = scrapedData
     if (search_term) {
       filteredData = scrapedData.filter(item =>
@@ -65,7 +62,6 @@ serve(async (req) => {
       )
     }
 
-    // Prepare data for Google Sheets
     const headers = [
       'URL', 
       'Title', 
@@ -104,10 +100,6 @@ serve(async (req) => {
     })
 
     const sheetData = [headers, ...rows]
-
-    // For now, return the data that would be sent to Google Sheets
-    // In a production environment, you would use the Google Sheets API here
-    // This requires setting up Google Cloud credentials and OAuth
     
     return new Response(
       JSON.stringify({
@@ -116,7 +108,7 @@ serve(async (req) => {
         data: {
           headers,
           rowCount: filteredData.length,
-          preview: rows.slice(0, 5), // First 5 rows as preview
+          preview: rows.slice(0, 5),
           instructions: "To complete Google Sheets integration, you need to set up Google Cloud credentials and OAuth. The data is ready to be sent to Google Sheets API."
         }
       }),

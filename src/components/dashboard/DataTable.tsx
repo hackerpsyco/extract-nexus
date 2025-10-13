@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Database, Download, Search, ExternalLink } from "lucide-react";
+import { Database, Download, Search, ExternalLink, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -84,27 +84,59 @@ export const DataTable = ({ userId }: DataTableProps) => {
       return;
     }
 
-    const headers = ["URL", "Title", "Description", "Date"];
+    // Enhanced CSV export with more company-relevant fields
+    const headers = [
+      "URL", 
+      "Title", 
+      "Description", 
+      "Content Preview", 
+      "Date Scraped",
+      "Domain",
+      "Content Length",
+      "Has Contact Info",
+      "Has About Section"
+    ];
+    
     const csvContent = [
       headers.join(","),
-      ...filteredData.map((item) =>
-        [
+      ...filteredData.map((item) => {
+        const domain = new URL(item.url).hostname;
+        const contentPreview = item.content 
+          ? item.content.substring(0, 200).replace(/"/g, '""').replace(/\n/g, ' ')
+          : "";
+        const hasContactInfo = item.content 
+          ? /contact|email|phone|address/i.test(item.content)
+          : false;
+        const hasAboutSection = item.content 
+          ? /about|company|mission|vision|history/i.test(item.content)
+          : false;
+        
+        return [
           `"${item.url}"`,
-          `"${item.title || ""}"`,
-          `"${item.description || ""}"`,
+          `"${(item.title || "").replace(/"/g, '""')}"`,
+          `"${(item.description || "").replace(/"/g, '""')}"`,
+          `"${contentPreview}"`,
           new Date(item.created_at).toLocaleDateString(),
-        ].join(",")
-      ),
+          `"${domain}"`,
+          item.content?.length || 0,
+          hasContactInfo ? "Yes" : "No",
+          hasAboutSection ? "Yes" : "No"
+        ].join(",");
+      }),
     ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `dataintel-export-${Date.now()}.csv`;
+    a.download = `company-data-export-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+    window.URL.revokeObjectURL(url);
 
-    toast({ title: "Export successful", description: "CSV file downloaded" });
+    toast({ 
+      title: "Export successful", 
+      description: `${filteredData.length} records exported to CSV` 
+    });
   };
 
   const exportToJSON = () => {
@@ -118,10 +150,82 @@ export const DataTable = ({ userId }: DataTableProps) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `dataintel-export-${Date.now()}.json`;
+    a.download = `company-data-export-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
+    window.URL.revokeObjectURL(url);
 
     toast({ title: "Export successful", description: "JSON file downloaded" });
+  };
+
+  const exportToGoogleSheets = async () => {
+    if (filteredData.length === 0) {
+      toast({ title: "No data to export", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('export-to-google-sheets', {
+        body: {
+          user_id: userId,
+          search_term: searchTerm
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        // For now, create a CSV that can be easily imported to Google Sheets
+        const csvContent = [
+          data.data.headers.join(","),
+          ...data.data.preview.map((row: any[]) => 
+            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+          ),
+          ...filteredData.slice(5).map((item) => {
+            const domain = new URL(item.url).hostname;
+            const contentPreview = item.content 
+              ? item.content.substring(0, 200).replace(/"/g, '""').replace(/\n/g, ' ')
+              : "";
+            const hasContactInfo = item.content 
+              ? /contact|email|phone|address/i.test(item.content)
+              : false;
+            const hasAboutSection = item.content 
+              ? /about|company|mission|vision|history/i.test(item.content)
+              : false;
+            
+            return [
+              `"${item.url}"`,
+              `"${(item.title || "").replace(/"/g, '""')}"`,
+              `"${(item.description || "").replace(/"/g, '""')}"`,
+              `"${contentPreview}"`,
+              new Date(item.created_at).toLocaleDateString(),
+              `"${domain}"`,
+              item.content?.length || 0,
+              hasContactInfo ? "Yes" : "No",
+              hasAboutSection ? "Yes" : "No"
+            ].join(",");
+          })
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `google-sheets-import-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        toast({ 
+          title: "Google Sheets export ready", 
+          description: "CSV file downloaded. Import it to Google Sheets manually for now." 
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Export failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -137,7 +241,7 @@ export const DataTable = ({ userId }: DataTableProps) => {
               {filteredData.length} of {data.length} records
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={exportToCSV}>
               <Download className="w-4 h-4 mr-2" />
               Export CSV
@@ -145,6 +249,10 @@ export const DataTable = ({ userId }: DataTableProps) => {
             <Button variant="outline" size="sm" onClick={exportToJSON}>
               <Download className="w-4 h-4 mr-2" />
               Export JSON
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToGoogleSheets}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Google Sheets
             </Button>
           </div>
         </div>

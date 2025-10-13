@@ -22,9 +22,33 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
   const handleSubmit = async (urls: string[]) => {
     setIsLoading(true);
     try {
-      const jobs = urls.map((u) => ({
+      // Validate and clean URLs
+      const validUrls = urls
+        .map(u => u.trim())
+        .filter(u => {
+          try {
+            new URL(u);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+
+      if (validUrls.length === 0) {
+        throw new Error("No valid URLs provided");
+      }
+
+      if (validUrls.length !== urls.length) {
+        toast({
+          title: "Warning",
+          description: `${urls.length - validUrls.length} invalid URLs were skipped.`,
+          variant: "destructive",
+        });
+      }
+
+      const jobs = validUrls.map((u) => ({
         user_id: userId,
-        url: u.trim(),
+        url: u,
         status: "pending",
       }));
 
@@ -32,9 +56,20 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
 
       if (error) throw error;
 
+      // Trigger processing
+      try {
+        const { error: functionError } = await supabase.functions.invoke('process-scraping-jobs');
+        if (functionError) {
+          console.warn('Failed to trigger processing:', functionError);
+          // Don't fail the whole operation, jobs will be processed eventually
+        }
+      } catch (processingError) {
+        console.warn('Processing trigger failed:', processingError);
+      }
+
       toast({
         title: "Jobs created!",
-        description: `${jobs.length} scraping job(s) added to queue.`,
+        description: `${jobs.length} scraping job(s) added to queue and processing started.`,
       });
 
       setUrl("");

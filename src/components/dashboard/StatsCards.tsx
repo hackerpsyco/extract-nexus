@@ -13,27 +13,45 @@ export const StatsCards = ({ userId }: StatsCardsProps) => {
     completedJobs: 0,
     totalDataPoints: 0,
     activeJobs: 0,
+    pendingJobs: 0,
+    runningJobs: 0,
+    failedJobs: 0,
+    totalPagesScraped: 0,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: jobs } = await supabase
-        .from("scraping_jobs")
-        .select("*")
-        .eq("user_id", userId);
+      try {
+        // Use the optimized database function for job stats
+        const { data: jobStats, error: jobStatsError } = await supabase
+          .rpc('get_user_job_stats', { user_uuid: userId });
 
-      const { count: dataCount } = await supabase
-        .from("scraped_data")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
+        if (jobStatsError) {
+          console.error('Error fetching job stats:', jobStatsError);
+          return;
+        }
 
-      if (jobs) {
-        setStats({
-          totalJobs: jobs.length,
-          completedJobs: jobs.filter((j) => j.status === "completed").length,
-          totalDataPoints: dataCount || 0,
-          activeJobs: jobs.filter((j) => j.status === "running" || j.status === "pending").length,
-        });
+        // Get data count separately for now (could be optimized further)
+        const { count: dataCount } = await supabase
+          .from("scraped_data")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId);
+
+        if (jobStats && jobStats.length > 0) {
+          const stats = jobStats[0];
+          setStats({
+            totalJobs: Number(stats.total_jobs) || 0,
+            completedJobs: Number(stats.completed_jobs) || 0,
+            totalDataPoints: dataCount || 0,
+            activeJobs: Number(stats.pending_jobs || 0) + Number(stats.running_jobs || 0),
+            pendingJobs: Number(stats.pending_jobs) || 0,
+            runningJobs: Number(stats.running_jobs) || 0,
+            failedJobs: Number(stats.failed_jobs) || 0,
+            totalPagesScraped: Number(stats.total_pages_scraped) || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
       }
     };
 
@@ -60,9 +78,9 @@ export const StatsCards = ({ userId }: StatsCardsProps) => {
 
   const statCards = [
     { title: "Total Jobs", value: stats.totalJobs, icon: Briefcase, color: "text-primary" },
-    { title: "Completed", value: stats.completedJobs, icon: CheckCircle2, color: "text-accent" },
-    { title: "Data Points", value: stats.totalDataPoints, icon: Database, color: "text-primary" },
-    { title: "Active Jobs", value: stats.activeJobs, icon: TrendingUp, color: "text-accent" },
+    { title: "Completed", value: stats.completedJobs, icon: CheckCircle2, color: "text-green-600" },
+    { title: "Data Points", value: stats.totalDataPoints, icon: Database, color: "text-blue-600" },
+    { title: "Pages Scraped", value: stats.totalPagesScraped, icon: TrendingUp, color: "text-purple-600" },
   ];
 
   return (

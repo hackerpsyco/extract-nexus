@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Globe, Loader2, List } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useJobProcessor } from "@/hooks/useJobProcessor";
 
 interface UrlInputFormProps {
   userId: string;
@@ -18,6 +19,7 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
   const [bulkUrls, setBulkUrls] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { processJobs, isProcessing } = useJobProcessor();
 
   const handleSubmit = async (urls: string[]) => {
     setIsLoading(true);
@@ -34,11 +36,16 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
 
       toast({
         title: "Jobs created!",
-        description: `${jobs.length} scraping job(s) added to queue.`,
+        description: `${jobs.length} scraping job(s) added to queue. Processing will start automatically.`,
       });
 
       setUrl("");
       setBulkUrls("");
+
+      // Automatically trigger job processing after a short delay
+      setTimeout(() => {
+        processJobs().catch(console.error);
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -97,9 +104,9 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
                   required
                 />
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Start Scraping
+              <Button type="submit" disabled={isLoading || isProcessing} className="w-full">
+                {(isLoading || isProcessing) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isProcessing ? "Processing..." : "Start Scraping"}
               </Button>
             </form>
           </TabsContent>
@@ -120,9 +127,9 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
                   required
                 />
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Start Bulk Scraping
+              <Button type="submit" disabled={isLoading || isProcessing} className="w-full">
+                {(isLoading || isProcessing) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isProcessing ? "Processing..." : "Start Bulk Scraping"}
               </Button>
             </form>
           </TabsContent>

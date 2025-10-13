@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Trash2, RefreshCw } from "lucide-react";
+import { Briefcase, Trash2, RefreshCw, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { useJobProcessor } from "@/hooks/useJobProcessor";
 
 interface Job {
   id: string;
@@ -24,7 +25,9 @@ interface JobsListProps {
 export const JobsList = ({ userId }: JobsListProps) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
   const { toast } = useToast();
+  const { processJobs, checkPendingJobs, isProcessing } = useJobProcessor();
 
   const fetchJobs = async () => {
     const { data, error } = await supabase
@@ -40,6 +43,10 @@ export const JobsList = ({ userId }: JobsListProps) => {
       setJobs(data || []);
     }
     setIsLoading(false);
+
+    // Check pending jobs count
+    const pendingJobs = await checkPendingJobs();
+    setPendingCount(pendingJobs);
   };
 
   useEffect(() => {
@@ -88,11 +95,31 @@ export const JobsList = ({ userId }: JobsListProps) => {
               <Briefcase className="w-5 h-5 text-primary" />
               Recent Jobs
             </CardTitle>
-            <CardDescription>Track your scraping jobs in real-time</CardDescription>
+            <CardDescription>
+              Track your scraping jobs in real-time
+              {pendingCount > 0 && (
+                <span className="ml-2 text-orange-600 font-medium">
+                  ({pendingCount} pending)
+                </span>
+              )}
+            </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchJobs}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-2">
+            {pendingCount > 0 && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => processJobs().catch(console.error)}
+                disabled={isProcessing}
+              >
+                <Play className="w-4 h-4 mr-1" />
+                Process
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={fetchJobs}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

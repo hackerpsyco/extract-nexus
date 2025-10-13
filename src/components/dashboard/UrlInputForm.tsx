@@ -28,7 +28,10 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
         status: "pending",
       }));
 
-      const { error } = await supabase.from("scraping_jobs").insert(jobs);
+      const { data: inserted, error } = await supabase
+        .from("scraping_jobs")
+        .insert(jobs)
+        .select("id");
 
       if (error) throw error;
 
@@ -36,6 +39,17 @@ export const UrlInputForm = ({ userId }: UrlInputFormProps) => {
         title: "Jobs created!",
         description: `${jobs.length} scraping job(s) added to queue.`,
       });
+
+      // Trigger server-side scraper to process the new jobs concurrently
+      try {
+        const jobIds = (inserted || []).map((row: any) => row.id);
+        await supabase.functions.invoke("scraper", {
+          body: { jobIds, concurrency: Math.min(5, Math.max(1, jobIds.length)) },
+        });
+      } catch (e: any) {
+        // Non-blocking: UI will still reflect jobs; function can be run later
+        console.warn("Failed to invoke scraper function", e?.message || e);
+      }
 
       setUrl("");
       setBulkUrls("");

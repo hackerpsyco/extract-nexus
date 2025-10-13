@@ -124,6 +124,35 @@ export const DataTable = ({ userId }: DataTableProps) => {
     toast({ title: "Export successful", description: "JSON file downloaded" });
   };
 
+  const exportToGoogleSheets = async () => {
+    if (filteredData.length === 0) {
+      toast({ title: "No data to export", variant: "destructive" });
+      return;
+    }
+    const spreadsheetId = prompt("Enter Google Spreadsheet ID (share with service account)")?.trim();
+    if (!spreadsheetId) return;
+
+    try {
+      const values = [
+        ["URL", "Title", "Description", "Date"],
+        ...filteredData.map((item) => [
+          item.url,
+          item.title || "",
+          item.description || "",
+          new Date(item.created_at).toISOString(),
+        ]),
+      ];
+
+      const { data, error } = await supabase.functions.invoke("sheets_export", {
+        body: { spreadsheetId, values },
+      });
+      if (error) throw error;
+      toast({ title: "Exported to Google Sheets" });
+    } catch (error: any) {
+      toast({ title: "Sheets export failed", description: error.message, variant: "destructive" });
+    }
+  };
+
   return (
     <Card className="backdrop-blur-sm bg-card/50 border-border/50">
       <CardHeader>
@@ -145,6 +174,10 @@ export const DataTable = ({ userId }: DataTableProps) => {
             <Button variant="outline" size="sm" onClick={exportToJSON}>
               <Download className="w-4 h-4 mr-2" />
               Export JSON
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToGoogleSheets}>
+              <Download className="w-4 h-4 mr-2" />
+              Export Sheets
             </Button>
           </div>
         </div>

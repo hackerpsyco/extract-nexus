@@ -9,6 +9,7 @@ import { StatsCards } from "@/components/dashboard/StatsCards";
 import { UrlInputForm } from "@/components/dashboard/UrlInputForm";
 import { JobsList } from "@/components/dashboard/JobsList";
 import { DataTable } from "@/components/dashboard/DataTable";
+import { PerformanceMonitor } from "@/components/dashboard/PerformanceMonitor";
 
 const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -83,7 +84,10 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8 space-y-8">
         <StatsCards userId={session.user.id} />
         <UrlInputForm userId={session.user.id} />
-        <JobsList userId={session.user.id} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <JobsList userId={session.user.id} />
+          <PerformanceMonitor userId={session.user.id} />
+        </div>
         <DataTable userId={session.user.id} />
       </main>
     </div>

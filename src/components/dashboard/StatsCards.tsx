@@ -23,8 +23,10 @@ export const StatsCards = ({ userId }: StatsCardsProps) => {
     const fetchStats = async () => {
       try {
         // Use the optimized database function for job stats
-        const { data: jobStats, error: jobStatsError } = await supabase
-          .rpc('get_user_job_stats', { user_uuid: userId });
+          const { data: jobStats, error: jobStatsError } = await (supabase.rpc as any)(
+            'get_user_job_stats',
+            { p_user_id: userId }
+          );
 
         if (jobStatsError) {
           console.error('Error fetching job stats:', jobStatsError);

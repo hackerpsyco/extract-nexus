@@ -174,7 +174,14 @@ export const DataTable = ({ userId }: DataTableProps) => {
       if (error) throw error;
 
       if (data?.success) {
-        // For now, create a CSV that can be easily imported to Google Sheets
+        // If the backend provided a direct Google Sheets URL, open it
+        if (data.sheetUrl) {
+          window.open(data.sheetUrl, '_blank');
+          toast({ title: 'Exported to Google Sheets', description: 'Your sheet has been updated.' });
+          return;
+        }
+
+        // Fallback: create a CSV for manual import
         const csvContent = [
           data.data.headers.join(","),
           ...data.data.preview.map((row: any[]) => 
@@ -183,7 +190,7 @@ export const DataTable = ({ userId }: DataTableProps) => {
           ...filteredData.slice(5).map((item) => {
             const domain = new URL(item.url).hostname;
             const contentPreview = item.content 
-              ? item.content.substring(0, 200).replace(/"/g, '""').replace(/\n/g, ' ')
+              ? item.content.substring(0, 200).replace(/\"/g, '""').replace(/\n/g, ' ')
               : "";
             const hasContactInfo = item.content 
               ? /contact|email|phone|address/i.test(item.content)
@@ -194,8 +201,8 @@ export const DataTable = ({ userId }: DataTableProps) => {
             
             return [
               `"${item.url}"`,
-              `"${(item.title || "").replace(/"/g, '""')}"`,
-              `"${(item.description || "").replace(/"/g, '""')}"`,
+              `"${(item.title || "").replace(/\"/g, '""')}"`,
+              `"${(item.description || "").replace(/\"/g, '""')}"`,
               `"${contentPreview}"`,
               new Date(item.created_at).toLocaleDateString(),
               `"${domain}"`,
@@ -225,6 +232,79 @@ export const DataTable = ({ userId }: DataTableProps) => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const exportShareableCsvLink = async () => {
+    if (filteredData.length === 0) {
+      toast({ title: "No data to export", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const headers = [
+        "URL", 
+        "Title", 
+        "Description", 
+        "Content Preview", 
+        "Date Scraped",
+        "Domain",
+        "Content Length",
+        "Has Contact Info",
+        "Has About Section"
+      ];
+
+      const csvContent = [
+        headers.join(","),
+        ...filteredData.map((item) => {
+          const domain = new URL(item.url).hostname;
+          const contentPreview = item.content 
+            ? item.content.substring(0, 200).replace(/"/g, '""').replace(/\n/g, ' ')
+            : "";
+          const hasContactInfo = item.content 
+            ? /contact|email|phone|address/i.test(item.content)
+            : false;
+          const hasAboutSection = item.content 
+            ? /about|company|mission|vision|history/i.test(item.content)
+            : false;
+          
+          return [
+            `"${item.url}"`,
+            `"${(item.title || "").replace(/"/g, '""')}"`,
+            `"${(item.description || "").replace(/"/g, '""')}"`,
+            `"${contentPreview}"`,
+            new Date(item.created_at).toLocaleDateString(),
+            `"${domain}"`,
+            item.content?.length || 0,
+            hasContactInfo ? "Yes" : "No",
+            hasAboutSection ? "Yes" : "No"
+          ].join(",");
+        })
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const filePath = `exports/${userId}/${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('exports')
+        .upload(filePath, blob, { contentType: 'text/csv', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('exports')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      await navigator.clipboard.writeText(publicUrl);
+      toast({ title: 'Shareable link copied', description: 'CSV link copied to clipboard.' });
+      
+      // Also open in new tab for convenience
+      window.open(publicUrl, '_blank');
+    } catch (error: any) {
+      console.error('CSV share link error:', error);
+      toast({ title: 'Share failed', description: error.message, variant: 'destructive' });
     }
   };
 

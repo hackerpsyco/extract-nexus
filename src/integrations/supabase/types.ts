@@ -105,7 +105,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_job_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          completed_jobs: number
+          failed_jobs: number
+          pending_jobs: number
+          running_jobs: number
+          total_jobs: number
+          total_pages_scraped: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

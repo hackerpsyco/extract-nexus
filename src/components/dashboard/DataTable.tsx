@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Database, Download, Search, ExternalLink, FileSpreadsheet } from "lucide-react";
+import { Database, Download, Search, ExternalLink, FileSpreadsheet, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -333,6 +333,10 @@ export const DataTable = ({ userId }: DataTableProps) => {
             <Button variant="outline" size="sm" onClick={exportToGoogleSheets}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Google Sheets
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportShareableCsvLink}>
+              <Link2 className="w-4 h-4 mr-2" />
+              Share CSV Link
             </Button>
           </div>
         </div>

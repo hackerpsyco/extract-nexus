@@ -223,19 +223,20 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
     console.log(`Successfully processed job ${job.id}: ${scrapedPages}/${totalPages} pages`)
     return { jobId: job.id, success: true, pages: scrapedPages }
 
-  } catch (error) {
-    console.error(`Error processing job ${job.id}:`, error)
+  } catch (error: unknown) {
+    const err = error as Error
+    console.error(`Error processing job ${job.id}:`, err)
 
     await supabaseClient
       .from('scraping_jobs')
       .update({ 
         status: 'failed',
-        error_message: error.message,
+        error_message: err?.message || String(error),
         updated_at: new Date().toISOString()
       })
       .eq('id', job.id)
 
-    return { jobId: job.id, success: false, error: error.message }
+    return { jobId: job.id, success: false, error: err?.message || String(error) }
   }
 }
 

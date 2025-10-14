@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// Removed edge runtime types to avoid optional dependency resolution issues
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import FirecrawlApp from 'npm:@mendable/firecrawl-js@4.3.8'
 

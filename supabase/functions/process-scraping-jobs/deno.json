@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": "auto",
   "imports": {
     "supabase": "https://esm.sh/@supabase/supabase-js@2",
     "firecrawl": "https://esm.sh/@mendable/firecrawl-js@4.3.8"

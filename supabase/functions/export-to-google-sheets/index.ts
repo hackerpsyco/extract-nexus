@@ -1,4 +1,4 @@
-// Removed edge runtime types to avoid optional dependency resolution issues
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -63,39 +63,47 @@ Deno.serve(async (req) => {
     }
 
     const headers = [
-      'URL', 
-      'Title', 
-      'Description', 
-      'Content Preview', 
-      'Date Scraped',
-      'Domain',
-      'Content Length',
-      'Has Contact Info',
-      'Has About Section'
+      'Company Name',
+      'URL',
+      'Industry',
+      'Company Size',
+      'Founded Year',
+      'Emails',
+      'Phone Numbers',
+      'Addresses',
+      'HR Contacts',
+      'Packages/Pricing',
+      'Services',
+      'LinkedIn',
+      'Twitter',
+      'Facebook',
+      'Date Scraped'
     ]
 
     const rows = filteredData.map(item => {
-      const domain = new URL(item.url).hostname
-      const contentPreview = item.content 
-        ? item.content.substring(0, 200).replace(/\n/g, ' ')
-        : ""
-      const hasContactInfo = item.content 
-        ? /contact|email|phone|address/i.test(item.content)
-        : false
-      const hasAboutSection = item.content 
-        ? /about|company|mission|vision|history/i.test(item.content)
-        : false
+      const emails = item.emails?.join('; ') || ''
+      const phones = item.phone_numbers?.join('; ') || ''
+      const addresses = item.addresses?.join('; ') || ''
+      const hrContacts = item.hr_contacts?.map((c: any) => c.email || '').join('; ') || ''
+      const packages = item.packages_pricing?.map((p: any) => `${p.name}: ${p.price}`).join('; ') || ''
+      const services = item.services?.slice(0, 5).join('; ') || ''
 
       return [
+        item.company_name || item.title || "",
         item.url,
-        item.title || "",
-        item.description || "",
-        contentPreview,
-        new Date(item.created_at).toLocaleDateString(),
-        domain,
-        item.content?.length || 0,
-        hasContactInfo ? "Yes" : "No",
-        hasAboutSection ? "Yes" : "No"
+        item.industry || "",
+        item.company_size || "",
+        item.founded_year || "",
+        emails,
+        phones,
+        addresses,
+        hrContacts,
+        packages,
+        services,
+        item.social_links?.linkedin || "",
+        item.social_links?.twitter || "",
+        item.social_links?.facebook || "",
+        new Date(item.created_at).toLocaleDateString()
       ]
     })
 
@@ -120,9 +128,8 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in export-to-google-sheets:', error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 

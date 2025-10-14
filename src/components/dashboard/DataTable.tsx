@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Database, Download, Search, ExternalLink, FileSpreadsheet, Link2 } from "lucide-react";
+import { Database, Download, Search, ExternalLink, FileSpreadsheet, Eye, Mail, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CompanyDetailsDialog } from "./CompanyDetailsDialog";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -20,6 +22,17 @@ interface ScrapedData {
   title: string | null;
   description: string | null;
   content: string | null;
+  company_name: string | null;
+  emails: string[] | null;
+  phone_numbers: string[] | null;
+  addresses: string[] | null;
+  social_links: any;
+  hr_contacts: any[] | null;
+  packages_pricing: any[] | null;
+  services: string[] | null;
+  industry: string | null;
+  company_size: string | null;
+  founded_year: string | null;
   created_at: string;
 }
 
@@ -32,6 +45,8 @@ export const DataTable = ({ userId }: DataTableProps) => {
   const [filteredData, setFilteredData] = useState<ScrapedData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCompany, setSelectedCompany] = useState<ScrapedData | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -86,41 +101,46 @@ export const DataTable = ({ userId }: DataTableProps) => {
 
     // Enhanced CSV export with more company-relevant fields
     const headers = [
-      "URL", 
-      "Title", 
-      "Description", 
-      "Content Preview", 
-      "Date Scraped",
-      "Domain",
-      "Content Length",
-      "Has Contact Info",
-      "Has About Section"
+      "Company Name",
+      "URL",
+      "Industry",
+      "Company Size",
+      "Founded Year",
+      "Emails",
+      "Phone Numbers",
+      "Addresses",
+      "HR Contacts",
+      "Packages/Pricing",
+      "Services",
+      "LinkedIn",
+      "Date Scraped"
     ];
     
     const csvContent = [
       headers.join(","),
       ...filteredData.map((item) => {
-        const domain = new URL(item.url).hostname;
-        const contentPreview = item.content 
-          ? item.content.substring(0, 200).replace(/"/g, '""').replace(/\n/g, ' ')
-          : "";
-        const hasContactInfo = item.content 
-          ? /contact|email|phone|address/i.test(item.content)
-          : false;
-        const hasAboutSection = item.content 
-          ? /about|company|mission|vision|history/i.test(item.content)
-          : false;
-        
+        const emails = item.emails?.join('; ') || '';
+        const phones = item.phone_numbers?.join('; ') || '';
+        const addresses = item.addresses?.join('; ') || '';
+        const hrContacts = item.hr_contacts?.map((c: any) => c.email || '').join('; ') || '';
+        const packages = item.packages_pricing?.map((p: any) => `${p.name}: ${p.price}`).join('; ') || '';
+        const services = item.services?.slice(0, 5).join('; ') || '';
+        const linkedin = item.social_links?.linkedin || '';
+
         return [
+          `"${(item.company_name || item.title || '').replace(/"/g, '""')}"`,
           `"${item.url}"`,
-          `"${(item.title || "").replace(/"/g, '""')}"`,
-          `"${(item.description || "").replace(/"/g, '""')}"`,
-          `"${contentPreview}"`,
-          new Date(item.created_at).toLocaleDateString(),
-          `"${domain}"`,
-          item.content?.length || 0,
-          hasContactInfo ? "Yes" : "No",
-          hasAboutSection ? "Yes" : "No"
+          `"${item.industry || ''}"`,
+          `"${item.company_size || ''}"`,
+          `"${item.founded_year || ''}"`,
+          `"${emails.replace(/"/g, '""')}"`,
+          `"${phones.replace(/"/g, '""')}"`,
+          `"${addresses.replace(/"/g, '""')}"`,
+          `"${hrContacts.replace(/"/g, '""')}"`,
+          `"${packages.replace(/"/g, '""')}"`,
+          `"${services.replace(/"/g, '""')}"`,
+          `"${linkedin}"`,
+          new Date(item.created_at).toLocaleDateString()
         ].join(",");
       }),
     ].join("\n");
@@ -365,34 +385,86 @@ export const DataTable = ({ userId }: DataTableProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>URL</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Contact Info</TableHead>
+                  <TableHead>HR Contacts</TableHead>
+                  <TableHead>Packages</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium max-w-xs truncate">
-                      {item.title || "N/A"}
-                    </TableCell>
-                    <TableCell className="max-w-md truncate">
-                      {item.description || "N/A"}
+                  <TableRow key={item.id} className="hover:bg-muted/50 cursor-pointer">
+                    <TableCell className="font-medium">
+                      <div>
+                        <p className="font-semibold">{item.company_name || item.title || "N/A"}</p>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-muted-foreground hover:underline flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          {new URL(item.url).hostname}
+                        </a>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-primary hover:underline"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        <span className="max-w-xs truncate">{item.url}</span>
-                      </a>
+                      {item.industry ? (
+                        <Badge variant="secondary">{item.industry}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {item.emails && item.emails.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Mail className="w-3 h-3 mr-1" />
+                            {item.emails.length}
+                          </Badge>
+                        )}
+                        {item.phone_numbers && item.phone_numbers.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            <Phone className="w-3 h-3 mr-1" />
+                            {item.phone_numbers.length}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {item.hr_contacts && item.hr_contacts.length > 0 ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          {item.hr_contacts.length} HR
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">None</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {item.packages_pricing && item.packages_pricing.length > 0 ? (
+                        <Badge variant="outline">{item.packages_pricing.length}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">N/A</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                       {new Date(item.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCompany(item);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -401,6 +473,11 @@ export const DataTable = ({ userId }: DataTableProps) => {
           </div>
         )}
       </CardContent>
+      <CompanyDetailsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        company={selectedCompany}
+      />
     </Card>
   );
 };

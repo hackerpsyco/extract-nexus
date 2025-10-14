@@ -1,6 +1,7 @@
-// Removed edge runtime types to avoid optional dependency resolution issues
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import FirecrawlApp from 'npm:@mendable/firecrawl-js@4.3.8'
+import { extractCompanyData } from './data-extractor.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,14 +14,6 @@ interface ScrapingJob {
   url: string
   user_id: string
   status: string
-}
-
-interface ScrapedResult {
-  title?: string
-  description?: string
-  content?: string
-  url: string
-  metadata?: Record<string, any>
 }
 
 Deno.serve(async (req) => {
@@ -60,9 +53,9 @@ Deno.serve(async (req) => {
     if (!jobs || jobs.length === 0) {
       return new Response(
         JSON.stringify({ message: 'No pending jobs found' }),
-        { 
+        {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
+          status: 200
         }
       )
     }
@@ -83,15 +76,15 @@ Deno.serve(async (req) => {
     const failed = results.filter(r => r.status === 'rejected').length
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: `Processed ${jobs.length} jobs`,
         successful,
         failed,
         details: results
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 200
       }
     )
 
@@ -100,9 +93,9 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500
       }
     )
   }
@@ -114,58 +107,60 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
   try {
     await supabaseClient
       .from('scraping_jobs')
-      .update({ 
+      .update({
         status: 'running',
         updated_at: new Date().toISOString()
       })
       .eq('id', job.id)
 
-    const shouldCrawl = await shouldCrawlSite(job.url)
-    
-    let results: ScrapedResult[] = []
-    let totalPages = 1
-    let scrapedPages = 0
+    console.log(`Scraping page: ${job.url}`)
 
-    // Single page scraping only
-    console.log(`Scraping single page: ${job.url}`)
-      
-    const scrapeResponse = await app.scrape(job.url, {
-      formats: ['markdown']
+    const scrapeResponse = await app.scrapeUrl(job.url, {
+      pageOptions: {
+        onlyMainContent: true,
+        includeHtml: false,
+        screenshot: false,
+      }
     })
 
-    if (scrapeResponse.markdown) {
-      results = [{
-        title: scrapeResponse.metadata?.title || extractTitleFromContent(scrapeResponse.markdown),
-        description: scrapeResponse.metadata?.description || extractDescriptionFromContent(scrapeResponse.markdown),
-        content: scrapeResponse.markdown,
-        url: scrapeResponse.metadata?.sourceURL || job.url,
-        metadata: {
-          ...scrapeResponse.metadata,
-          scraped: true,
-          timestamp: new Date().toISOString()
-        }
-      }]
-      totalPages = 1
-      scrapedPages = 1
+    if (!scrapeResponse.success || !scrapeResponse.data) {
+      throw new Error('Failed to scrape URL')
     }
 
-    if (results.length === 0) {
-      throw new Error('No data extracted from the URL')
-    }
+    const rawContent = scrapeResponse.data.content || ''
+    const title = scrapeResponse.data.metadata?.title || extractTitleFromContent(rawContent)
+    const description = scrapeResponse.data.metadata?.description || extractDescriptionFromContent(rawContent)
 
-    const dataInserts = results.map(result => ({
+    const companyData = extractCompanyData(rawContent, job.url, scrapeResponse.data.metadata)
+
+    const dataInsert = {
       job_id: job.id,
       user_id: job.user_id,
-      url: result.url,
-      title: result.title,
-      description: result.description,
-      content: result.content,
-      metadata: result.metadata
-    }))
+      url: scrapeResponse.data.metadata?.sourceURL || job.url,
+      title,
+      description,
+      content: rawContent,
+      metadata: {
+        ...scrapeResponse.data.metadata,
+        scraped: true,
+        timestamp: new Date().toISOString()
+      },
+      company_name: companyData.companyName,
+      emails: companyData.emails,
+      phone_numbers: companyData.phoneNumbers,
+      addresses: companyData.addresses,
+      social_links: companyData.socialLinks,
+      hr_contacts: companyData.hrContacts,
+      packages_pricing: companyData.packagesPricing,
+      services: companyData.services,
+      industry: companyData.industry,
+      company_size: companyData.companySize,
+      founded_year: companyData.foundedYear
+    }
 
     const { error: insertError } = await supabaseClient
       .from('scraped_data')
-      .insert(dataInserts)
+      .insert([dataInsert])
 
     if (insertError) {
       throw insertError
@@ -173,17 +168,24 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
 
     await supabaseClient
       .from('scraping_jobs')
-      .update({ 
+      .update({
         status: 'completed',
-        total_pages: totalPages,
-        scraped_pages: scrapedPages,
+        total_pages: 1,
+        scraped_pages: 1,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', job.id)
 
-    console.log(`Successfully processed job ${job.id}: ${scrapedPages}/${totalPages} pages`)
-    return { jobId: job.id, success: true, pages: scrapedPages }
+    console.log(`Successfully processed job ${job.id}`)
+    console.log(`Extracted: ${companyData.emails.length} emails, ${companyData.phoneNumbers.length} phones, ${companyData.hrContacts.length} HR contacts`)
+
+    return { jobId: job.id, success: true, extracted: {
+      emails: companyData.emails.length,
+      phones: companyData.phoneNumbers.length,
+      hrContacts: companyData.hrContacts.length,
+      packages: companyData.packagesPricing.length
+    }}
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -191,7 +193,7 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
 
     await supabaseClient
       .from('scraping_jobs')
-      .update({ 
+      .update({
         status: 'failed',
         error_message: errorMessage,
         updated_at: new Date().toISOString()
@@ -202,14 +204,9 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
   }
 }
 
-async function shouldCrawlSite(url: string): Promise<boolean> {
-  // Simplified to single page scraping only
-  return false
-}
-
 function extractTitleFromContent(content: string): string {
   if (!content) return 'Untitled'
-  
+
   const lines = content.split('\n').filter(line => line.trim())
   if (lines.length > 0) {
     const firstLine = lines[0].trim()
@@ -217,13 +214,13 @@ function extractTitleFromContent(content: string): string {
       return firstLine
     }
   }
-  
+
   return 'Untitled'
 }
 
 function extractDescriptionFromContent(content: string): string {
   if (!content) return ''
-  
+
   const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
   if (sentences.length > 0) {
     let description = sentences[0].trim()
@@ -232,6 +229,6 @@ function extractDescriptionFromContent(content: string): string {
     }
     return description.length > 500 ? description.substring(0, 500) + '...' : description
   }
-  
+
   return ''
 }

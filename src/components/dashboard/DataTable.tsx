@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Database, Download, Search, ExternalLink, FileSpreadsheet, Eye, Mail, Phone } from "lucide-react";
+import { Database, Download, Search, ExternalLink, FileSpreadsheet, Eye, Mail, Phone, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CompanyDetailsDialog } from "./CompanyDetailsDialog";
 import { Badge } from "@/components/ui/badge";
@@ -60,8 +60,8 @@ export const DataTable = ({ userId }: DataTableProps) => {
     if (error) {
       toast({ title: "Error loading data", description: error.message, variant: "destructive" });
     } else {
-      setData(scrapedData || []);
-      setFilteredData(scrapedData || []);
+      setData((scrapedData as unknown as ScrapedData[]) || []);
+      setFilteredData((scrapedData as unknown as ScrapedData[]) || []);
     }
     setIsLoading(false);
   };

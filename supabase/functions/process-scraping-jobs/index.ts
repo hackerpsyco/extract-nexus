@@ -115,33 +115,31 @@ async function processJob(job: ScrapingJob, app: FirecrawlApp, supabaseClient: a
 
     console.log(`Scraping page: ${job.url}`)
 
-    const scrapeResponse = await app.scrapeUrl(job.url, {
-      pageOptions: {
-        onlyMainContent: true,
-        includeHtml: false,
-        screenshot: false,
-      }
+    const scrapeResponse: any = await app.scrape(job.url, {
+      formats: ['markdown'],
+      onlyMainContent: true,
+      waitFor: 0
     })
 
-    if (!scrapeResponse.success || !scrapeResponse.data) {
+    if (!scrapeResponse || !scrapeResponse.markdown) {
       throw new Error('Failed to scrape URL')
     }
 
-    const rawContent = scrapeResponse.data.content || ''
-    const title = scrapeResponse.data.metadata?.title || extractTitleFromContent(rawContent)
-    const description = scrapeResponse.data.metadata?.description || extractDescriptionFromContent(rawContent)
+    const rawContent = scrapeResponse.markdown || ''
+    const title = scrapeResponse.metadata?.title || extractTitleFromContent(rawContent)
+    const description = scrapeResponse.metadata?.description || extractDescriptionFromContent(rawContent)
 
-    const companyData = extractCompanyData(rawContent, job.url, scrapeResponse.data.metadata)
+    const companyData = extractCompanyData(rawContent, job.url, scrapeResponse.metadata)
 
     const dataInsert = {
       job_id: job.id,
       user_id: job.user_id,
-      url: scrapeResponse.data.metadata?.sourceURL || job.url,
+      url: scrapeResponse.metadata?.sourceURL || job.url,
       title,
       description,
       content: rawContent,
       metadata: {
-        ...scrapeResponse.data.metadata,
+        ...scrapeResponse.metadata,
         scraped: true,
         timestamp: new Date().toISOString()
       },

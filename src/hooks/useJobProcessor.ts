@@ -6,7 +6,7 @@ export const useJobProcessor = (userId: string) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const processPendingJobs = async () => {
-    if (processingRef.current) return;
+    if (processingRef.current || !userId) return;
 
     try {
       processingRef.current = true;

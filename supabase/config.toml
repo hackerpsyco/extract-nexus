@@ -1,1 +1,4 @@
 project_id = "jpdqotbdwtafmnokfnta"
+
+[functions.deep-research]
+verify_jwt = true

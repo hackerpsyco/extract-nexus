@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Database, Download, Search, ExternalLink, FileSpreadsheet, Eye, Mail, Phone, Link2 } from "lucide-react";
+import { Database, Download, Search, ExternalLink, FileSpreadsheet, Eye, Mail, Phone, Link2, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CompanyDetailsDialog } from "./CompanyDetailsDialog";
+import { ResearchDialog } from "./ResearchDialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -47,6 +48,9 @@ export const DataTable = ({ userId }: DataTableProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCompany, setSelectedCompany] = useState<ScrapedData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedResearch, setSelectedResearch] = useState<any>(null);
+  const [researchDialogOpen, setResearchDialogOpen] = useState(false);
+  const [researchingId, setResearchingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -328,6 +332,39 @@ export const DataTable = ({ userId }: DataTableProps) => {
     }
   };
 
+  const startDeepResearch = async (item: ScrapedData) => {
+    setResearchingId(item.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('deep-research', {
+        body: {
+          scrapedDataId: item.id,
+          topic: item.company_name || item.title || new URL(item.url).hostname,
+          content: item.content || item.description || ''
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({ 
+          title: 'Research completed', 
+          description: 'Deep AI analysis is ready to view.' 
+        });
+        setSelectedResearch(data.research);
+        setResearchDialogOpen(true);
+      }
+    } catch (error: any) {
+      console.error('Research error:', error);
+      toast({ 
+        title: 'Research failed', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setResearchingId(null);
+    }
+  };
+
   return (
     <Card className="backdrop-blur-sm bg-card/50 border-border/50">
       <CardHeader>
@@ -388,8 +425,6 @@ export const DataTable = ({ userId }: DataTableProps) => {
                   <TableHead>Company</TableHead>
                   <TableHead>Industry</TableHead>
                   <TableHead>Contact Info</TableHead>
-                  <TableHead>HR Contacts</TableHead>
-                  <TableHead>Packages</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -435,36 +470,32 @@ export const DataTable = ({ userId }: DataTableProps) => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {item.hr_contacts && item.hr_contacts.length > 0 ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          {item.hr_contacts.length} HR
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {item.packages_pricing && item.packages_pricing.length > 0 ? (
-                        <Badge variant="outline">{item.packages_pricing.length}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">N/A</span>
-                      )}
-                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                       {new Date(item.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCompany(item);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCompany(item);
+                            setDialogOpen(true);
+                          }}
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startDeepResearch(item)}
+                          disabled={researchingId === item.id}
+                          title="AI Deep Research"
+                        >
+                          <Brain className={`w-4 h-4 ${researchingId === item.id ? 'animate-pulse text-primary' : ''}`} />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -477,6 +508,11 @@ export const DataTable = ({ userId }: DataTableProps) => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         company={selectedCompany}
+      />
+      <ResearchDialog
+        open={researchDialogOpen}
+        onOpenChange={setResearchDialogOpen}
+        research={selectedResearch}
       />
     </Card>
   );

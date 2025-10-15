@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      research_results: {
+        Row: {
+          created_at: string
+          full_analysis: string | null
+          id: string
+          key_findings: string[] | null
+          research_summary: string | null
+          scraped_data_id: string | null
+          sources: Json | null
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_analysis?: string | null
+          id?: string
+          key_findings?: string[] | null
+          research_summary?: string | null
+          scraped_data_id?: string | null
+          sources?: Json | null
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_analysis?: string | null
+          id?: string
+          key_findings?: string[] | null
+          research_summary?: string | null
+          scraped_data_id?: string | null
+          sources?: Json | null
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_results_scraped_data_id_fkey"
+            columns: ["scraped_data_id"]
+            isOneToOne: false
+            referencedRelation: "scraped_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scraped_data: {
         Row: {
           content: string | null

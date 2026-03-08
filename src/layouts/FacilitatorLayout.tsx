@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Building2, UserCheck, CalendarCheck, ClipboardCheck,
-  Users, TrendingUp, Settings, LogOut, Menu, X, Search
+  Users, TrendingUp, Settings, LogOut, Menu, X, Search, BookOpen, Calendar
 } from "lucide-react";
 
 const navItems = [

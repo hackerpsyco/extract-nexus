@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Building2, MapPin, Users, BookOpen, Eye, Info } from "lucide-react";
+import { Building2, MapPin, Users, Eye } from "lucide-react";
 
 const mockSchools = [
   { school: { id: "1", name: "Delhi Public School", block: "Rohini", district: "North Delhi", udise: "0912345" }, enrollment_count: 85, class_count: 4 },
@@ -10,70 +10,63 @@ const mockSchools = [
 ];
 
 export default function SchoolsListPage() {
-  const schools = mockSchools;
-
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Building2 className="w-6 h-6" />
-          My Assigned Schools
+      <div className="mb-5">
+        <h2 className="text-lg font-extrabold flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-primary" />
+          </div>
+          My Schools
         </h2>
+        <p className="text-muted-foreground text-sm mt-1">{mockSchools.length} schools assigned to you</p>
       </div>
 
-      <p className="text-muted-foreground text-sm mb-4">
-        <Info className="w-4 h-4 inline mr-1" />
-        {schools.length} school{schools.length !== 1 ? "s" : ""} assigned
-      </p>
-
-      {schools.length === 0 ? (
-        <div className="bg-info/10 border border-info/30 rounded-lg p-6 text-center">
-          <Building2 className="w-12 h-12 mx-auto mb-3 text-info" />
-          <p className="font-medium">No schools assigned</p>
-          <p className="text-sm text-muted-foreground">Contact your administrator to assign schools.</p>
+      {mockSchools.length === 0 ? (
+        <div className="elevated-card p-8 text-center">
+          <Building2 className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
+          <p className="font-semibold text-sm">No schools assigned</p>
+          <p className="text-xs text-muted-foreground mt-1">Contact your administrator to assign schools.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {schools.map((item, i) => (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {mockSchools.map((item, i) => (
             <motion.div
               key={item.school.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-card rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition-shadow"
+              transition={{ delay: i * 0.08 }}
+              className="elevated-card overflow-hidden hover:shadow-lg transition-all group"
             >
               <div className="p-5">
                 <div className="flex justify-between items-start mb-3">
-                  <h5 className="font-semibold flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-primary" />
-                    {item.school.name}
-                  </h5>
-                  <span className="px-2 py-0.5 bg-success/10 text-success text-xs rounded-full font-medium">Active</span>
+                  <h5 className="font-bold text-sm">{item.school.name}</h5>
+                  <span className="px-2 py-0.5 bg-success/10 text-success text-[10px] rounded-full font-bold uppercase tracking-wide">Active</span>
                 </div>
-                <p className="text-muted-foreground text-sm mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" />
+                <p className="text-muted-foreground text-xs flex items-center gap-1 mb-1">
+                  <MapPin className="w-3 h-3" />
                   {item.school.block}, {item.school.district}
                 </p>
-                <p className="text-muted-foreground text-sm mb-4">UDISE: {item.school.udise}</p>
+                <p className="text-muted-foreground text-xs mb-4">UDISE: {item.school.udise}</p>
 
-                <div className="grid grid-cols-2 text-center gap-2 mb-3">
-                  <div className="border-r border-border">
-                    <div className="text-primary font-bold text-lg">{item.enrollment_count}</div>
-                    <div className="text-xs text-muted-foreground">Students</div>
+                <div className="grid grid-cols-2 gap-3 mb-1">
+                  <div className="bg-primary/5 rounded-xl p-3 text-center">
+                    <div className="text-xl font-extrabold text-primary">{item.enrollment_count}</div>
+                    <div className="text-[10px] text-muted-foreground font-medium">Students</div>
                   </div>
-                  <div>
-                    <div className="text-success font-bold text-lg">{item.class_count}</div>
-                    <div className="text-xs text-muted-foreground">Classes</div>
+                  <div className="bg-success/5 rounded-xl p-3 text-center">
+                    <div className="text-xl font-extrabold text-success">{item.class_count}</div>
+                    <div className="text-[10px] text-muted-foreground font-medium">Classes</div>
                   </div>
                 </div>
               </div>
 
               <div className="px-5 py-3 border-t border-border bg-muted/30 flex gap-2">
-                <Link to={`/schools/${item.school.id}`} className="flex-1 text-center px-3 py-1.5 border border-primary/30 text-primary rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">
-                  <Eye className="w-3.5 h-3.5 inline mr-1" />View Classes
+                <Link to={`/schools/${item.school.id}`} className="flex-1 text-center py-2 rounded-xl border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/10 transition-colors active:scale-[0.98]">
+                  <Eye className="w-3.5 h-3.5 inline mr-1" />Classes
                 </Link>
-                <Link to={`/students?school=${item.school.id}`} className="flex-1 text-center px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                  <Users className="w-3.5 h-3.5 inline mr-1" />View Students
+                <Link to={`/students?school=${item.school.id}`} className="flex-1 text-center py-2 rounded-xl gradient-primary text-primary-foreground text-xs font-semibold hover:shadow-md hover:shadow-primary/20 transition-all active:scale-[0.98]">
+                  <Users className="w-3.5 h-3.5 inline mr-1" />Students
                 </Link>
               </div>
             </motion.div>

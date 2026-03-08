@@ -10,10 +10,7 @@ const mockOfficeWork = {
     office_task_description: "Complete student progress reports and submit to supervisor. Prepare materials for next week's sessions.",
     time: "10:00",
     school: { name: "Delhi Public School" },
-    assigned_facilitators: [
-      { full_name: "Amit Kumar" },
-      { full_name: "Priya Sharma" },
-    ],
+    assigned_facilitators: [{ full_name: "Amit Kumar" }, { full_name: "Priya Sharma" }],
   },
   is_assigned: true,
   attendance: null as { status: string; remarks: string } | null,
@@ -22,135 +19,98 @@ const mockOfficeWork = {
 export default function SessionCalendarPage() {
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
-  const data = mockOfficeWork;
 
   const handleSubmit = () => {
-    if (!status) {
-      toast.error("Please select attendance status");
-      return;
-    }
-    toast.success("Office work attendance marked successfully!");
+    if (!status) { toast.error("Please select status"); return; }
+    toast.success("Attendance marked!");
   };
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold">Today's Session</h2>
+      <div className="mb-5">
+        <h2 className="text-lg font-extrabold">Session Calendar</h2>
         <p className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
       </div>
 
-      {/* Office Work Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-xl border-2 border-warning shadow-sm overflow-hidden"
-      >
-        <div className="bg-warning text-warning-foreground px-4 py-3 font-semibold flex items-center gap-2">
-          <Briefcase className="w-5 h-5" />
-          Office Work / Task Today
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="elevated-card overflow-hidden">
+        <div className="bg-warning text-warning-foreground px-4 py-3 font-bold text-xs flex items-center gap-2 uppercase tracking-wide">
+          <Briefcase className="w-4 h-4" /> Office Work / Task Today
         </div>
         <div className="p-5">
-          <p className="text-sm mb-4">{data.calendar_date.office_task_description}</p>
+          <p className="text-sm mb-4">{mockOfficeWork.calendar_date.office_task_description}</p>
 
           {/* Details */}
-          <div className="bg-muted/50 rounded-lg p-4 mb-4 space-y-2 text-sm">
-            {data.calendar_date.time && (
-              <div className="flex items-center gap-2">
+          <div className="bg-muted/50 rounded-2xl p-4 mb-5 space-y-2.5 text-sm">
+            {mockOfficeWork.calendar_date.time && (
+              <div className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <strong>Time:</strong> {data.calendar_date.time}
+                <span className="font-semibold">{mockOfficeWork.calendar_date.time}</span>
               </div>
             )}
-            {data.calendar_date.school && (
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <strong>School:</strong> {data.calendar_date.school.name}
-              </div>
-            )}
-            {data.calendar_date.assigned_facilitators.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <strong>Assigned Facilitators:</strong>
-                </div>
-                <ul className="list-disc list-inside pl-6 text-muted-foreground">
-                  {data.calendar_date.assigned_facilitators.map((f, i) => (
-                    <li key={i}>{f.full_name}</li>
+            <div className="flex items-center gap-2.5">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <span className="font-semibold">{mockOfficeWork.calendar_date.school.name}</span>
+            </div>
+            {mockOfficeWork.calendar_date.assigned_facilitators.length > 0 && (
+              <div className="flex items-start gap-2.5">
+                <Users className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div className="flex flex-wrap gap-1.5">
+                  {mockOfficeWork.calendar_date.assigned_facilitators.map((f, i) => (
+                    <span key={i} className="px-2.5 py-0.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold">{f.full_name}</span>
                   ))}
-                </ul>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Existing Attendance */}
-          {data.attendance && (
-            <div className="bg-info/10 border border-info/30 rounded-lg p-3 mb-4 text-sm">
-              <strong>Attendance Status:</strong>
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
-                data.attendance.status === "present" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-              }`}>
-                {data.attendance.status === "present" ? "✓ Present" : "✗ Absent"}
-              </span>
-              {data.attendance.remarks && (
-                <p className="text-muted-foreground mt-1">Remarks: {data.attendance.remarks}</p>
-              )}
-            </div>
-          )}
-
-          {/* Mark Attendance Form */}
+          {/* Mark Attendance */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-2">Mark Attendance</label>
-              <div className="space-y-2">
+              <label className="block text-xs font-bold mb-2">Mark Attendance</label>
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: "present", label: "Present", icon: "✓" },
-                  { value: "absent", label: "Absent", icon: "✗" },
+                  { value: "present", label: "✓ Present", bg: "border-success bg-success/5 text-success", active: "border-success bg-success/15" },
+                  { value: "absent", label: "✗ Absent", bg: "border-destructive/30 bg-destructive/5 text-destructive", active: "border-destructive bg-destructive/15" },
                 ].map((opt) => (
-                  <label
+                  <button
                     key={opt.value}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      status === opt.value ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                    onClick={() => setStatus(opt.value)}
+                    className={`p-3.5 rounded-xl border-2 text-sm font-bold transition-all active:scale-[0.98] ${
+                      status === opt.value ? opt.active : opt.bg
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="status"
-                      value={opt.value}
-                      checked={status === opt.value}
-                      onChange={(e) => setStatus(e.target.value)}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm font-medium">{opt.icon} {opt.label}</span>
-                  </label>
+                    {opt.label}
+                  </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Remarks (Optional)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Remarks (Optional)</label>
               <textarea
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
                 rows={3}
-                className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background"
-                placeholder="Add any notes..."
+                className="w-full border border-input rounded-xl px-3 py-2.5 text-sm bg-background focus:ring-2 focus:ring-primary/20 transition-all"
+                placeholder="Add notes..."
               />
             </div>
 
             <button
               onClick={handleSubmit}
-              className="w-full py-2.5 bg-warning text-warning-foreground rounded-lg font-semibold hover:opacity-90 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-warning text-warning-foreground rounded-xl font-bold text-sm hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              <CheckCircle className="w-4 h-4" />Mark Attendance
+              <CheckCircle className="w-4 h-4" />Submit Attendance
             </button>
           </div>
         </div>
       </motion.div>
 
       <div className="mt-4">
-        <Link to="/dashboard" className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm hover:bg-accent inline-flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" />Back to Dashboard
+        <Link to="/dashboard" className="px-4 py-2.5 bg-muted text-foreground rounded-xl text-xs font-semibold hover:bg-accent inline-flex items-center gap-1.5 transition-colors active:scale-[0.98]">
+          <ArrowLeft className="w-3.5 h-3.5" />Back to Dashboard
         </Link>
       </div>
     </div>

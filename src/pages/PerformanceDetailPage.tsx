@@ -24,105 +24,94 @@ export default function PerformanceDetailPage() {
     Object.fromEntries(
       mockSubjects.map((s) => [
         s.id,
-        {
-          score: mockPerformance[s.id]?.score?.toString() || "",
-          remarks: mockPerformance[s.id]?.remarks || "",
-        },
+        { score: mockPerformance[s.id]?.score?.toString() || "", remarks: mockPerformance[s.id]?.remarks || "" },
       ])
     )
   );
 
   const getGrade = (score: number) => {
-    if (score >= 80) return { grade: "A", color: "bg-success/10 text-success" };
-    if (score >= 60) return { grade: "B", color: "bg-info/10 text-info" };
-    if (score >= 40) return { grade: "C", color: "bg-warning/10 text-warning" };
-    return { grade: "F", color: "bg-destructive/10 text-destructive" };
+    if (score >= 80) return { grade: "A", bg: "bg-success/10", text: "text-success" };
+    if (score >= 60) return { grade: "B", bg: "bg-info/10", text: "text-info" };
+    if (score >= 40) return { grade: "C", bg: "bg-warning/10", text: "text-warning" };
+    return { grade: "F", bg: "bg-destructive/10", text: "text-destructive" };
   };
 
   const handleSave = (subjectId: string) => {
-    const data = scores[subjectId];
-    if (!data.score) {
+    if (!scores[subjectId]?.score) {
       toast.error("Please enter a score");
       return;
     }
-    toast.success("Score saved successfully!");
+    toast.success("Score saved!");
   };
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Link to={`/performance/${classId}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-3">
-        <ArrowLeft className="w-4 h-4" />Back
+      <Link to={`/performance/${classId}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary mb-4 font-medium transition-colors">
+        <ArrowLeft className="w-3.5 h-3.5" />Back to Performance
       </Link>
-      <h2 className="text-xl font-bold">{mockStudent.full_name}</h2>
-      <p className="text-sm text-muted-foreground mb-6">5A - {mockStudent.enrollment_number}</p>
 
-      {/* Score Cards */}
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="px-4 py-3 border-b bg-muted/30 font-semibold text-sm">📝 Add/Edit Scores</div>
-        <div className="p-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mockSubjects.map((subject) => {
-            const scoreVal = parseInt(scores[subject.id]?.score || "0");
-            const gradeInfo = scores[subject.id]?.score ? getGrade(scoreVal) : null;
+      <div className="mb-5">
+        <h2 className="text-lg font-extrabold">{mockStudent.full_name}</h2>
+        <p className="text-xs text-muted-foreground">5A · {mockStudent.enrollment_number}</p>
+      </div>
 
-            return (
-              <div key={subject.id} className="border rounded-lg p-4">
-                <h6 className="font-semibold text-sm mb-3">{subject.name}</h6>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {mockSubjects.map((subject) => {
+          const scoreVal = parseInt(scores[subject.id]?.score || "0");
+          const gradeInfo = scores[subject.id]?.score ? getGrade(scoreVal) : null;
 
-                <div className="mb-3">
-                  <label className="block text-xs text-muted-foreground mb-1">Score (0-100)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={scores[subject.id]?.score || ""}
-                    onChange={(e) =>
-                      setScores((prev) => ({
-                        ...prev,
-                        [subject.id]: { ...prev[subject.id], score: e.target.value },
-                      }))
-                    }
-                    className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
-                    placeholder="Enter score"
-                  />
-                </div>
+          return (
+            <div key={subject.id} className="elevated-card p-4">
+              <h6 className="font-bold text-sm mb-3">{subject.name}</h6>
 
-                <div className="mb-3">
-                  <label className="block text-xs text-muted-foreground mb-1">Grade</label>
-                  {gradeInfo ? (
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${gradeInfo.color}`}>
-                      {gradeInfo.grade}
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">-</span>
-                  )}
-                </div>
-
-                <div className="mb-3">
-                  <label className="block text-xs text-muted-foreground mb-1">Remarks</label>
-                  <textarea
-                    value={scores[subject.id]?.remarks || ""}
-                    onChange={(e) =>
-                      setScores((prev) => ({
-                        ...prev,
-                        [subject.id]: { ...prev[subject.id], remarks: e.target.value },
-                      }))
-                    }
-                    rows={2}
-                    className="w-full border border-input rounded-md px-3 py-2 text-xs bg-background resize-y"
-                    placeholder="Add remarks..."
-                  />
-                </div>
-
-                <button
-                  onClick={() => handleSave(subject.id)}
-                  className="w-full py-1.5 bg-primary text-primary-foreground rounded-md text-xs font-medium hover:opacity-90"
-                >
-                  ✓ Save
-                </button>
+              <div className="mb-3">
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Score (0-100)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={scores[subject.id]?.score || ""}
+                  onChange={(e) =>
+                    setScores((prev) => ({ ...prev, [subject.id]: { ...prev[subject.id], score: e.target.value } }))
+                  }
+                  className="w-full border border-input rounded-xl px-3 py-2.5 text-sm bg-background focus:ring-2 focus:ring-primary/20 transition-all"
+                  placeholder="Enter score"
+                />
               </div>
-            );
-          })}
-        </div>
+
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Grade:</span>
+                {gradeInfo ? (
+                  <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold ${gradeInfo.bg} ${gradeInfo.text}`}>
+                    {gradeInfo.grade}
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 bg-muted text-muted-foreground rounded-lg text-xs">—</span>
+                )}
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Remarks</label>
+                <textarea
+                  value={scores[subject.id]?.remarks || ""}
+                  onChange={(e) =>
+                    setScores((prev) => ({ ...prev, [subject.id]: { ...prev[subject.id], remarks: e.target.value } }))
+                  }
+                  rows={2}
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs bg-background resize-y focus:ring-2 focus:ring-primary/20 transition-all"
+                  placeholder="Add remarks..."
+                />
+              </div>
+
+              <button
+                onClick={() => handleSave(subject.id)}
+                className="w-full py-2.5 gradient-primary text-primary-foreground rounded-xl text-xs font-bold active:scale-[0.98] transition-transform"
+              >
+                ✓ Save Score
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

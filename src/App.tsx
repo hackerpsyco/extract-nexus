@@ -9,6 +9,7 @@ import StudentsListPage from "@/pages/StudentsListPage";
 import StudentDetailPage from "@/pages/StudentDetailPage";
 import StudentCreatePage from "@/pages/StudentCreatePage";
 import TodaySessionPage from "@/pages/TodaySessionPage";
+import ClassTodaySessionPage from "@/pages/ClassTodaySessionPage";
 import MarkAttendancePage from "@/pages/MarkAttendancePage";
 import MyAttendancePage from "@/pages/MyAttendancePage";
 import AttendanceFilterPage from "@/pages/AttendanceFilterPage";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/students/:studentId" element={<StudentDetailPage />} />
           <Route path="/students/:studentId/edit" element={<StudentCreatePage />} />
           <Route path="/today-session" element={<TodaySessionPage />} />
+          <Route path="/today-session/:classId" element={<ClassTodaySessionPage />} />
           <Route path="/attendance" element={<AttendanceFilterPage />} />
           <Route path="/attendance/mark/:sessionId" element={<MarkAttendancePage />} />
           <Route path="/my-attendance" element={<MyAttendancePage />} />

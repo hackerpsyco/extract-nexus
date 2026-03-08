@@ -137,8 +137,8 @@ export default function StudentDetailPage() {
           </div>
         </div>
 
-        {/* Right: Attendance */}
-        <div className="lg:col-span-3">
+        {/* Right: Attendance + Growth */}
+        <div className="lg:col-span-3 space-y-4">
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30 text-sm font-semibold">Attendance Statistics</div>
             <div className="p-4">
@@ -156,7 +156,6 @@ export default function StudentDetailPage() {
                 ))}
               </div>
 
-              {/* Records */}
               <h6 className="font-semibold text-sm mb-2">Recent Attendance</h6>
               <div className="space-y-2">
                 {data.attendance_records.map((r, i) => (
@@ -183,6 +182,9 @@ export default function StudentDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Growth Intelligence Card */}
+          <StudentGrowthCard analysis={mockGrowthAnalysis} />
         </div>
       </div>
     </div>

@@ -2,9 +2,24 @@ import { motion } from "framer-motion";
 import { CalendarCheck, Play, BookOpen, Users, AlertTriangle, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 
+interface ClassInfo {
+  status: "session" | "holiday" | "office_work";
+  class_section: {
+    id: string;
+    class_level: string;
+    section: string;
+    display_name: string;
+    school: { id: string; name: string };
+  };
+  class_sections?: { id: string; display_name: string }[];
+  planned_session?: { id: string; day_number: number; title: string } | null;
+  actual_session?: { id: string; status: string } | null;
+  attendance_summary?: { present: number; absent: number } | null;
+}
+
 const mockTodayData = {
   today: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
-  holiday_today: null,
+  holiday_today: null as { holiday_name: string } | null,
   classes_today: [
     {
       status: "session" as const,
@@ -27,7 +42,7 @@ const mockTodayData = {
       actual_session: null,
       attendance_summary: null,
     },
-  ],
+  ] as ClassInfo[],
 };
 
 export default function TodaySessionPage() {
@@ -43,7 +58,7 @@ export default function TodaySessionPage() {
           <AlertTriangle className="w-6 h-6 text-destructive shrink-0" />
           <div>
             <h5 className="font-bold">Holiday / No Session Today</h5>
-            <p className="text-sm text-muted-foreground">{(data.holiday_today as any)?.holiday_name}</p>
+            <p className="text-sm text-muted-foreground">{data.holiday_today.holiday_name}</p>
           </div>
         </div>
       )}

@@ -1,0 +1,127 @@
+{% extends "supervisor/shared/base.html" %}
+
+{% block title %}Class Sessions - Supervisor{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ class_section.display_name }} - All Sessions</h1>
+            <p class="text-gray-600">{{ class_section.school.name }}</p>
+        </div>
+        <a href="{% url 'supervisor_sessions_list' %}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+            ← Back to Sessions
+        </a>
+    </div>
+
+    <!-- Set Active Day Section -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+        <h2 class="text-lg font-bold text-blue-900 mb-4">Set Active Day</h2>
+        <p class="text-sm text-blue-700 mb-4">Set the current active day. All previous days will be automatically marked as CONDUCTED.</p>
+        
+        <div class="flex gap-4 items-end">
+            <div class="flex-1 max-w-xs">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Day Number (1-150)</label>
+                <input type="number" id="activeDayInput" min="1" max="150" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button onclick="setActiveDayConfirm()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                Set Active Day
+            </button>
+        </div>
+    </div>
+
+    <!-- Sessions Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for item in session_data %}
+        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="font-bold text-gray-900">Day {{ item.session.day_number }}</h3>
+                    <p class="text-sm text-gray-600">{{ item.session.title }}</p>
+                </div>
+                {% if item.actual_session %}
+                <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Conducted</span>
+                {% else %}
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">Pending</span>
+                {% endif %}
+            </div>
+
+            {% if item.actual_session %}
+            <div class="mb-4 p-3 bg-gray-50 rounded">
+                <p class="text-sm text-gray-600 mb-1">Attendance: <strong>{{ item.attendance_count }}</strong> students</p>
+            </div>
+            {% endif %}
+
+            <a href="{% url 'supervisor_session_detail' item.session.id %}" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                View Details →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function setActiveDayConfirm() {
+    const dayInput = document.getElementById('activeDayInput');
+    const activeDay = parseInt(dayInput.value);
+    
+    if (!activeDay || activeDay < 1 || activeDay > 150) {
+        alert('Please enter a valid day number between 1 and 150');
+        return;
+    }
+    
+    const message = `Set Day ${activeDay} as active?\n\nThis will automatically mark all days 1-${activeDay - 1} as CONDUCTED.`;
+    
+    if (!confirm(message)) {
+        return;
+    }
+    
+    setActiveDay(activeDay);
+}
+
+function setActiveDay(activeDay) {
+    const classId = '{{ class_section.id }}';
+    
+    fetch('/supervisor/class/set-active-day/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            class_id: classId,
+            active_day: activeDay
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ Success!\n\nActive day set to ${data.active_day}\nMarked ${data.created_count} previous days as conducted`);
+            location.reload();
+        } else {
+            alert(`❌ Error: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error setting active day');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "facilitator/shared/base.html" %}
+
+{% block content %}
+<h4 class="fw-bold mb-3">My Classes</h4>
+
+<div class="row g-3">
+  {% for item in class_sections %}
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold">
+          {{ item.class_section.school.name }}
+        </h6>
+        
+        <!-- Display grouped classes -->
+        {% if item.class_sections and item.class_sections|length > 1 %}
+        <p class="mb-1"><strong>Grouped Classes ({{ item.class_sections|length }}):</strong></p>
+        <div class="mb-2">
+          {% for cls in item.class_sections %}
+          <span class="badge bg-info me-1 mb-1">
+            <i class="bi bi-collection me-1"></i>{{ cls.display_name }}
+          </span>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="mb-1">
+          <i class="bi bi-book me-1"></i>{{ item.class_section.display_name }}
+        </p>
+        {% endif %}
+
+        <!-- Today's Status Badge -->
+        {% if item.today_status == 'holiday' %}
+        <span class="badge bg-warning mb-2">Holiday Today</span>
+        {% elif item.today_status == 'office_work' %}
+        <span class="badge bg-info mb-2">Office Work Today</span>
+        {% else %}
+        <span class="badge bg-success mb-2">Session Today</span>
+        {% endif %}
+
+        <div class="d-flex gap-2 mt-2">
+          <!-- Smart Today's Session Button -->
+          {% if item.today_status == 'holiday' %}
+          <!-- Holiday - Show calendar UI -->
+          <a href="{% url 'facilitator_today_session_calendar' %}"
+             class="btn btn-warning btn-sm flex-grow-1">
+            Holiday Info
+          </a>
+          {% elif item.today_status == 'office_work' %}
+          <!-- Office Work - Show calendar UI -->
+          <a href="{% url 'facilitator_today_session_calendar' %}"
+             class="btn btn-info btn-sm flex-grow-1">
+            Office Work
+          </a>
+          {% else %}
+          <!-- Session - Show workflow UI -->
+          {% if item.class_sections|length > 1 %}
+          <!-- Grouped classes - redirect to primary class (first in group) -->
+          <!-- The today_session view will automatically detect grouped_session_id and show all grouped classes -->
+          <a href="{% url 'facilitator_class_today_session' item.class_sections.0.id %}"
+             class="btn btn-primary btn-sm flex-grow-1">
+            Today's Session (Group)
+          </a>
+          {% else %}
+          <!-- Single class -->
+          <a href="{% url 'facilitator_class_today_session' item.class_section.id %}"
+             class="btn btn-primary btn-sm flex-grow-1">
+            Today's Session
+          </a>
+          {% endif %}
+          {% endif %}
+
+          <!-- Curriculum Button -->
+          {% if item.class_section %}
+          <a href="{% url 'facilitator_curriculum_session' item.class_section.id %}"
+             class="btn btn-success btn-sm flex-grow-1">
+            <i class="fas fa-book"></i> Curriculum
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-muted">No classes assigned yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

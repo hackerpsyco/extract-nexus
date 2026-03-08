@@ -1,0 +1,273 @@
+{% extends 'admin/shared/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+  <div>
+    <h5 class="text-lg font-semibold text-gray-900">
+      {{ class_section.school.name }} - {{ class_section.class_level }} Section {{ class_section.section }}
+    </h5>
+    <p class="text-gray-500 text-sm">
+      {% if pagination %}
+        Showing {{ pagination.start_index }}-{{ pagination.end_index }} of {{ pagination.total_sessions }} sessions
+      {% else %}
+        Planned Sessions & Progress
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="flex gap-2">
+    <a href="{% url 'admin_sessions_filter' %}"
+       class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">
+      ← Back to Filter
+    </a>
+    
+    <!-- <a href="{% url 'planned_session_create' class_section.id %}"
+       class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+      ➕ Add Session
+    </a>
+
+    <a href="{% url 'planned_session_import' class_section.id %}"
+       class="px-4 py-2 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
+      ⬆ Import Sessions
+    </a> -->
+  </div>
+</div>
+
+<!-- Quick Stats -->
+{% if stats %}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Total Sessions</p>
+        <p class="text-2xl font-bold text-gray-900">{{ stats.total_sessions }}</p>
+      </div>
+      <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+        <span class="text-blue-600 text-xl">📚</span>
+      </div>
+    </div>
+    <p class="text-xs text-gray-500 mt-2">
+      {% if stats.total_sessions == 150 %}✅ Full curriculum{% else %}⚠️ {{ stats.total_sessions }}/150{% endif %}
+    </p>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Completed</p>
+        <p class="text-2xl font-bold text-green-600">{{ stats.conducted_count }}</p>
+      </div>
+      <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+        <span class="text-green-600 text-xl">✅</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Pending</p>
+        <p class="text-2xl font-bold text-yellow-600">{{ stats.pending_count }}</p>
+      </div>
+      <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+        <span class="text-yellow-600 text-xl">⏳</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Cancelled</p>
+        <p class="text-2xl font-bold text-gray-600">{{ stats.cancelled_count }}</p>
+      </div>
+      <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+        <span class="text-gray-600 text-xl">❌</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Pagination Controls -->
+{% if pagination and pagination.total_pages > 1 %}
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm mb-4 p-4">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <label class="text-sm text-gray-600">Sessions per page:</label>
+      <select onchange="changePerPage(this.value)" class="px-2 py-1 border border-gray-300 rounded text-sm">
+        <option value="25" {% if pagination.per_page == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if pagination.per_page == 100 %}selected{% endif %}>100</option>
+      </select>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      {% if pagination.has_previous %}
+        <a href="?page={{ pagination.previous_page }}&per_page={{ pagination.per_page }}" 
+           class="px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+          ← Previous
+        </a>
+      {% endif %}
+      
+      <span class="text-sm text-gray-600">
+        Page {{ pagination.current_page }} of {{ pagination.total_pages }}
+      </span>
+      
+      {% if pagination.has_next %}
+        <a href="?page={{ pagination.next_page }}&per_page={{ pagination.per_page }}" 
+           class="px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+          Next →
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Sessions Table -->
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+    <h6 class="text-sm font-semibold text-gray-900">
+      {% if pagination %}
+        Sessions {{ pagination.start_index }}-{{ pagination.end_index }} of {{ pagination.total_sessions }}
+      {% else %}
+        All Sessions
+      {% endif %}
+    </h6>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Day</th>
+          <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Content</th>
+          <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+          <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for ps in planned_sessions %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-3 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span class="text-sm font-bold text-blue-600">{{ ps.day_number }}</span>
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">Day {{ ps.day_number }}</div>
+              </div>
+            </div>
+          </td>
+
+          <td class="px-3 py-4">
+            <div class="text-sm font-medium text-gray-900 mb-1">
+              {{ ps.title|default:"Day "|add:ps.day_number|add:" Session" }}
+            </div>
+            {% if ps.steps.all %}
+              <div class="text-xs text-gray-600">
+                {{ ps.steps.all|length }} activit{{ ps.steps.all|length|pluralize:"y,ies" }}
+              </div>
+            {% else %}
+              <div class="text-xs text-gray-400">curriculum content</div>
+            {% endif %}
+          </td>
+
+          <td class="px-3 py-4 whitespace-nowrap">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+              {% if ps.status_class == 'success' %}bg-green-100 text-green-800
+              {% elif ps.status_class == 'warning' %}bg-yellow-100 text-yellow-800
+              {% elif ps.status_class == 'danger' %}bg-red-100 text-red-800
+              {% else %}bg-gray-100 text-gray-800{% endif %}">
+              {% if ps.status_info == 'completed' %}✅ Completed
+              {% elif ps.status_info == 'pending' %}⏳ Pending
+              {% elif ps.status_info == 'cancelled' %}❌ Cancelled
+              {% elif ps.status_info == 'holiday' %}🏖️ Holiday
+              {% else %}{{ ps.status_info|title }}{% endif %}
+            </span>
+          </td>
+
+          <td class="px-3 py-4 whitespace-nowrap text-right text-sm">
+            <div class="flex items-center justify-end gap-1">
+             
+              <a href="{% url 'planned_session_delete' ps.id %}"
+                 onclick="return confirm('Delete Day {{ ps.day_number }}?');"
+                 class="px-2.5 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50">
+                Delete
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-3 py-8 text-center">
+            <div class="flex flex-col items-center">
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <span class="text-gray-400 text-2xl">📚</span>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No Sessions Found</h3>
+              <p class="text-gray-500 mb-4">This class doesn't have any sessions yet.</p>
+              <form action="{% url 'initialize_class_sessions' class_section.id %}" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                        onclick="return confirm('Initialize 150 sessions for this class?')"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                  🚀 Initialize 150 Sessions
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Bottom Pagination -->
+{% if pagination and pagination.total_pages > 1 %}
+<div class="mt-4 flex items-center justify-center">
+  <div class="flex items-center gap-2">
+    {% if pagination.has_previous %}
+      <a href="?page=1&per_page={{ pagination.per_page }}" 
+         class="px-2 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 text-sm">
+        First
+      </a>
+      <a href="?page={{ pagination.previous_page }}&per_page={{ pagination.per_page }}" 
+         class="px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+        ← Prev
+      </a>
+    {% endif %}
+    
+    <span class="px-3 py-1 bg-blue-600 text-white rounded">
+      {{ pagination.current_page }}
+    </span>
+    
+    {% if pagination.has_next %}
+      <a href="?page={{ pagination.next_page }}&per_page={{ pagination.per_page }}" 
+         class="px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+        Next →
+      </a>
+      <a href="?page={{ pagination.total_pages }}&per_page={{ pagination.per_page }}" 
+         class="px-2 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 text-sm">
+        Last
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+function changePerPage(perPage) {
+  const url = new URL(window.location);
+  url.searchParams.set('per_page', perPage);
+  url.searchParams.set('page', '1'); // Reset to first page
+  window.location.href = url.toString();
+}
+</script>
+
+{% endblock %}

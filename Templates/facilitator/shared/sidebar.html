@@ -1,0 +1,77 @@
+<aside class="sidebar">
+    <!-- User Profile -->
+    <div class="user-profile">
+        <div class="avatar" style="background-image: url('https://via.placeholder.com/48');"></div>
+        <div class="user-info">
+            <h5>Facilitator</h5>
+            <small>{{ request.user.email }}</small>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <!-- MAIN Section -->
+        <div class="nav-section-title">MAIN</div>
+        
+        <a class="nav-link {% if request.resolver_match.url_name == 'facilitator_dashboard' %}active{% endif %}" href="{% url 'facilitator_dashboard' %}">
+            <i class="bi bi-speedometer2"></i>
+            <span class="nav-text">Dashboard</span>
+        </a>
+    
+        
+        <a class="nav-link {% if 'facilitator_schools' in request.resolver_match.url_name and 'facilitator_schools_list' not in request.resolver_match.url_name %}active{% endif %}" href="{% url 'facilitator_schools_list' %}">
+            <i class="bi bi-building"></i>
+            <span class="nav-text">My Schools</span>
+        </a>
+
+        <div class="nav-divider"></div>
+
+        <!-- MANAGEMENT Section -->
+        <div class="nav-section-title">MANAGEMENT</div>
+        
+        <a class="nav-link {% if 'facilitator_students' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'facilitator_students_list' %}">
+            <i class="bi bi-people"></i>
+            <span class="nav-text">Students</span>
+        </a>
+        
+        <a class="nav-link {% if 'student_performance' in request.resolver_match.url_name or 'facilitator_performance' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'facilitator_performance_class_select' %}">
+            <i class="bi bi-graph-up"></i>
+            <span class="nav-text">Performance</span>
+        </a>
+
+        <div class="nav-divider"></div>
+
+        <!-- SESSIONS Section -->
+        <div class="nav-section-title">SESSIONS</div>
+        
+        <a class="nav-link {% if request.resolver_match.url_name == 'facilitator_today_session' %}active{% endif %}" href="{% url 'facilitator_today_session' %}">
+            <i class="bi bi-calendar-check"></i>
+            <span class="nav-text">Today's Session</span>
+        </a>
+        
+        <a class="nav-link {% if request.resolver_match.url_name == 'facilitator_my_attendance' %}active{% endif %}" href="{% url 'facilitator_my_attendance' %}">
+            <i class="bi bi-person-check"></i>
+            <span class="nav-text">My Attendance</span>
+        </a>
+        
+        <a class="nav-link {% if request.resolver_match.url_name == 'facilitator_attendance' %}active{% endif %}" href="{% url 'facilitator_attendance' %}">
+            <i class="bi bi-clipboard-check"></i>
+            <span class="nav-text">Student Attendance</span>
+        </a>
+    </nav>
+
+    <!-- Bottom Navigation -->
+    <div class="nav-section-bottom">
+        <div class="nav-divider"></div>
+        
+        <a class="nav-link {% if request.resolver_match.url_name == 'facilitator_settings' %}active{% endif %}" href="{% url 'facilitator_settings' %}">
+            <i class="bi bi-gear"></i>
+            <span class="nav-text">Settings</span>
+        </a>
+        
+        <a class="nav-link logout-link" href="{% url 'logout' %}">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="nav-text">Logout</span>
+        </a>
+    </div>
+</aside>

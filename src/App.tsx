@@ -16,21 +16,6 @@ import AttendanceFilterPage from "@/pages/AttendanceFilterPage";
 import CurriculumPage from "@/pages/CurriculumPage";
 import PerformancePage from "@/pages/PerformancePage";
 import SettingsPage from "@/pages/SettingsPage";
-import FacilitatorLayout from "@/layouts/FacilitatorLayout";
-import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
-import SchoolsListPage from "@/pages/SchoolsListPage";
-import SchoolDetailPage from "@/pages/SchoolDetailPage";
-import StudentsListPage from "@/pages/StudentsListPage";
-import StudentDetailPage from "@/pages/StudentDetailPage";
-import StudentCreatePage from "@/pages/StudentCreatePage";
-import TodaySessionPage from "@/pages/TodaySessionPage";
-import MarkAttendancePage from "@/pages/MarkAttendancePage";
-import MyAttendancePage from "@/pages/MyAttendancePage";
-import AttendanceFilterPage from "@/pages/AttendanceFilterPage";
-import CurriculumPage from "@/pages/CurriculumPage";
-import PerformancePage from "@/pages/PerformancePage";
-import SettingsPage from "@/pages/SettingsPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -58,6 +43,7 @@ export default function App() {
           <Route path="/students/:studentId" element={<StudentDetailPage />} />
           <Route path="/students/:studentId/edit" element={<StudentCreatePage />} />
           <Route path="/today-session" element={<TodaySessionPage />} />
+          <Route path="/today-session/:classId" element={<ClassTodaySessionPage />} />
           <Route path="/attendance" element={<AttendanceFilterPage />} />
           <Route path="/attendance/mark/:sessionId" element={<MarkAttendancePage />} />
           <Route path="/my-attendance" element={<MyAttendancePage />} />

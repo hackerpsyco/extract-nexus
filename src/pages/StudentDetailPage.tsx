@@ -1,6 +1,21 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { User, Edit, Users as UsersIcon, ChevronRight, Plus, Phone } from "lucide-react";
+import StudentGrowthCard from "@/components/StudentGrowthCard";
+
+const mockGrowthAnalysis = {
+  growth_score: 72,
+  risk_level: "low" as const,
+  student_cluster: "consistent_improver",
+  engagement_level: "high" as const,
+  attendance_consistency: 88,
+  quiz_improvement_rate: 12.5,
+  text_complexity_growth: 65,
+  insights: "Aarav shows consistent improvement across all metrics. Attendance is strong at 92.5%, and quiz scores have improved by 12.5% over the last 3 months. Written responses are becoming more detailed and complex.",
+  recommendations: "Continue current learning pace. Consider advanced reading materials to challenge text complexity further. Encourage peer mentoring given strong performance.",
+  at_risk_flags: {},
+  data_points_used: 47,
+};
 
 const mockDetail = {
   student: { id: "s1", full_name: "Aarav Sharma", enrollment_number: "EN001", gender: "M" },
@@ -122,8 +137,8 @@ export default function StudentDetailPage() {
           </div>
         </div>
 
-        {/* Right: Attendance */}
-        <div className="lg:col-span-3">
+        {/* Right: Attendance + Growth */}
+        <div className="lg:col-span-3 space-y-4">
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30 text-sm font-semibold">Attendance Statistics</div>
             <div className="p-4">
@@ -141,7 +156,6 @@ export default function StudentDetailPage() {
                 ))}
               </div>
 
-              {/* Records */}
               <h6 className="font-semibold text-sm mb-2">Recent Attendance</h6>
               <div className="space-y-2">
                 {data.attendance_records.map((r, i) => (
@@ -168,6 +182,9 @@ export default function StudentDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Growth Intelligence Card */}
+          <StudentGrowthCard analysis={mockGrowthAnalysis} />
         </div>
       </div>
     </div>

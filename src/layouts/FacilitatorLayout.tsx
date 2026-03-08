@@ -3,16 +3,18 @@ import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Building2, UserCheck, CalendarCheck, ClipboardCheck,
-  Users, TrendingUp, Settings, LogOut, Menu, X, Search
+  Users, TrendingUp, Settings, LogOut, Menu, X, Search, BookOpen, Calendar
 } from "lucide-react";
 
 const navItems = [
   { label: "MAIN", type: "section" as const },
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "My Schools", icon: Building2, path: "/schools" },
+  { label: "My Classes", icon: BookOpen, path: "/classes" },
   { label: "My Attendance", icon: UserCheck, path: "/my-attendance" },
   { label: "SESSIONS", type: "section" as const },
   { label: "Today's Session", icon: CalendarCheck, path: "/today-session" },
+  { label: "Session Calendar", icon: Calendar, path: "/session-calendar" },
   { label: "Student Attendance", icon: ClipboardCheck, path: "/attendance" },
   { label: "MANAGEMENT", type: "section" as const },
   { label: "Students", icon: Users, path: "/students" },

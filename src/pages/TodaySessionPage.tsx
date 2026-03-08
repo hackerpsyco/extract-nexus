@@ -103,9 +103,9 @@ export default function TodaySessionPage() {
                         <Users className="w-4 h-4 inline mr-1" />Attendance
                       </Link>
                     ) : (
-                      <button className="flex-1 px-3 py-2 bg-success text-success-foreground rounded-lg text-sm font-medium hover:opacity-90">
+                      <Link to={`/today-session/${item.class_section.id}`} className="flex-1 text-center px-3 py-2 bg-success text-success-foreground rounded-lg text-sm font-medium hover:opacity-90">
                         <Play className="w-4 h-4 inline mr-1" />Start
-                      </button>
+                      </Link>
                     )}
                     <Link to={`/curriculum/${item.class_section.id}`} className="flex-1 text-center px-3 py-2 bg-info text-info-foreground rounded-lg text-sm font-medium hover:opacity-90">
                       <BookOpen className="w-4 h-4 inline mr-1" />Curriculum

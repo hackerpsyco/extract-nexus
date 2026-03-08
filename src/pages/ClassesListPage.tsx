@@ -2,10 +2,13 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { BookOpen, AlertTriangle, Briefcase, Calendar } from "lucide-react";
 
-    today_status: "session" | "holiday" | "office_work";
-  }[];
+interface ClassItem {
+  class_section: { id: string; display_name: string; class_level: string; section: string; school: { id: string; name: string } };
+  class_sections: { id: string; display_name: string }[];
+  today_status: "session" | "holiday" | "office_work";
+}
 
-  const mockClasses: ClassItem[] = [
+const mockClasses: ClassItem[] = [
   {
     class_section: { id: "c1", display_name: "5A", class_level: "5", section: "A", school: { id: "1", name: "Delhi Public School" } },
     class_sections: [{ id: "c1", display_name: "5A" }],
